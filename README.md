@@ -1,1 +1,1 @@
-# socialmedia-platform-server
+# JoySync-server1
