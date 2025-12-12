@@ -11,7 +11,10 @@ const upload = multer({storage});
 const authRoute=express.Router();
 
 
- 
+ authRoute.get("/check/pi",(req,res)=>{
+res.status(200);
+
+ });
 
 authRoute.post("/login",login);
 
@@ -34,4 +37,5 @@ authRoute.post("/findUser",findUser);
 
 
 export default authRoute;
+
 
