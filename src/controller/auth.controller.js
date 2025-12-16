@@ -224,13 +224,18 @@ export const getPosts=async(req,res)=>{
 const { userId }=req.params;
 
 try{
+const user=await User.findById(userId);
+    const usersToFetch = [userId, ...user.friends];
 
-const posts=await Post.find({post_owner:userId});
+// const posts=await Post.find({post_owner:userId});
+ const posts = await Post.find({
+      author: { $in: usersToFetch }
+    });
 
 return res.status(200).json(posts);
 }
 
-catch(error){
+catch(error){  
 console.log("Error in get post: ",error.mesage);
 res.status(500).json({message:"Internal server error"})
 }

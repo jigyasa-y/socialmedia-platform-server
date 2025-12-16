@@ -23,7 +23,9 @@ const userSchema=new mongoose.Schema(
         type:String,
         default:"",
     },
-    friends:[{}]
+    friends:[{
+        type:String
+    }]
 }
 
 );

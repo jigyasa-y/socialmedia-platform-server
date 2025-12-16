@@ -16,7 +16,7 @@ const authRoute=express.Router();
 return res.status(200).json({message:"Ok"});
   }
   catch(error){
-   res.status(500).json({message::"Internal server error"});
+   res.status(500).json({message:"Internal server error"});
 
   }
 
