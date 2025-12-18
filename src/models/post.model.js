@@ -2,9 +2,10 @@ import mongoose from 'mongoose';
 
 const postSchema=new mongoose.Schema(
 {
-post_owner:{
-    type:String,
-    required:true,
+author:{
+
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"User"
 
 },
 img:{
@@ -12,14 +13,10 @@ type:String,
 required:true,
 
 },
-fullName:{
-    type:String,
-    required:true
+caption:{
+    type:String
 },
-profilePic:{
-    type:String,
-    required:false
-},
+
 likes:[String],
 comments:[
 {

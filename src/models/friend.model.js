@@ -17,8 +17,7 @@ status:{
     enum:["pending","accepted","rejected"],
     default:"pending"
 }
-
-})
+});
 
 const Friend=mongoose.model("Friend",friendSchema);
 

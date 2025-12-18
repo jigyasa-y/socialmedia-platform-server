@@ -177,12 +177,13 @@ res.status(500).json({message:"Internal server error"});
 }
 
 export const uploadPost=async(req,res)=>{
-     
     const fileBuffer = req.file.buffer.toString("base64");
+    const caption = req.body.caption || "";
     
     try{
     const authHeader = req.headers.authorization;
     const token = authHeader.split(" ")[1];
+  
 
 if(!fileBuffer){
     return res.status(400).json({message:"Profile picture is required"});
@@ -196,14 +197,14 @@ if(!token){
       }
     );
    const isValid=jwt.verify(token,process.env.JWT_SECRET);
+
 const user =await User.findById(isValid.userId)
 
    const post=new Post({
-    post_owner:isValid.userId,
+    author:isValid.userId,
     img:uploadResult.secure_url,
-fullName:user.fullName,
-profilePic:user.profilePic
-   })
+    caption:caption
+   });
 
 post.save();
   res.status(201).json({ success: true, message: "Uploaded successfully" });
@@ -221,22 +222,43 @@ catch(error){
 
 export const getPosts=async(req,res)=>{
 
-const { userId }=req.params;
+const {myId}=req.params;
 
 try{
-const user=await User.findById(userId);
-    const usersToFetch = [userId, ...user.friends];
+
+
+  const friends = await Friend.find({
+      status: "accepted",
+      $or: [
+        { sender: myId },
+        { receiver: myId }
+      ]
+    });
+
+  
+    const friendIds = friends.map(f =>
+      f.sender === myId ? f.receiver : f.sender
+    );
+    friendIds.push(myId);
+
+     const posts = await Post.find({
+      userId: { $in: friendIds }
+    }).populate("author","fullName profilePic").sort({ createdAt: -1 });
+
+
+    // const usersToFetch = [userId, ...user.friends];
 
 // const posts=await Post.find({post_owner:userId});
- const posts = await Post.find({
-      author: { $in: usersToFetch }
-    });
+//  const posts = await Post.find({
+//       author: { $in: usersToFetch }
+//     });
+
 
 return res.status(200).json(posts);
 }
 
 catch(error){  
-console.log("Error in get post: ",error.mesage);
+console.log("Error in get post: ",error.message);
 res.status(500).json({message:"Internal server error"})
 }
 
@@ -337,5 +359,112 @@ export const findUser=async(req,res)=>{
     catch(error){
         console.log("Error in find user: ",error.message);
         res.status(500).json({message:"Internal server error"});
+    }
+}
+
+export const getUserPosts=async(req,res)=>{
+    const {userId}=req.params;
+
+    try{
+        const posts=await Post.find({author:userId})
+            .populate("author","fullName profilePic")
+            .sort({createdAt:-1});
+        
+        res.status(200).json(posts);
+    }
+    catch(error){
+        console.log("Error in get user posts: ",error.message);
+        res.status(500).json({message:"Internal server error"});
+    }
+}
+
+export const deletePost=async(req,res)=>{
+    try{
+        const authHeader = req.headers.authorization;
+        const token = authHeader.split(" ")[1];
+        const {postId}=req.body;
+
+        const isValid=jwt.verify(token,process.env.JWT_SECRET);
+        const post=await Post.findById(postId);
+
+        if(!post){
+            return res.status(404).json({success:false,message:"Post not found"});
+        }
+
+        if(post.author.toString() !== isValid.userId){
+            return res.status(403).json({success:false,message:"Not authorized to delete this post"});
+        }
+
+        await Post.findByIdAndDelete(postId);
+        res.status(200).json({success:true,message:"Post deleted successfully"});
+    }
+    catch(error){
+        console.log("Error in delete post: ",error.message);
+        res.status(500).json({success:false,message:"Internal server error"});
+    }
+}
+
+export const updateName=async(req,res)=>{
+    try{
+        const authHeader = req.headers.authorization;
+        const token = authHeader.split(" ")[1];
+        const {fullName}=req.body;
+
+        if(!fullName || fullName.trim().length === 0){
+            return res.status(400).json({success:false,message:"Name is required"});
+        }
+
+        const isValid=jwt.verify(token,process.env.JWT_SECRET);
+        const updatedUser=await User.findByIdAndUpdate(isValid.userId,{fullName:fullName.trim()},{new:true});
+
+        if(!updatedUser){
+            return res.status(404).json({success:false,message:"User not found"});
+        }
+
+        return res.status(200).json({success:true,message:"Name updated successfully",user:updatedUser});
+    }
+    catch(error){
+        console.log("Error in update name: ",error.message);
+        return res.status(500).json({success:false,message:"Internal server error"});
+    }
+}
+
+export const changePassword=async(req,res)=>{
+    try{
+        const authHeader = req.headers.authorization;
+        const token = authHeader.split(" ")[1];
+        const {currentPassword,newPassword}=req.body;
+
+        if(!currentPassword || !newPassword){
+            return res.status(400).json({success:false,message:"Current password and new password are required"});
+        }
+
+        if(newPassword.length<6){
+            return res.status(400).json({success:false,message:"New password must be at least 6 characters long"});
+        }
+
+        const isValid=jwt.verify(token,process.env.JWT_SECRET);
+        const user=await User.findById(isValid.userId);
+
+        if(!user){
+            return res.status(404).json({success:false,message:"User not found"});
+        }
+
+        const isPasswordCorrect=await bcrypt.compare(currentPassword,user.password);
+
+        if(!isPasswordCorrect){
+            return res.status(401).json({success:false,message:"Current password is incorrect"});
+        }
+
+        const salt=await bcrypt.genSalt(10);
+        const hashedNewPassword=await bcrypt.hash(newPassword,salt);
+
+        await User.findByIdAndUpdate(isValid.userId,{password:hashedNewPassword});
+
+        return res.status(200).json({success:true,message:"Password changed successfully"});
+    }
+    catch(error){
+        console.log("Error in change password: ",error.message);
+        return res.status(500).json({success:false,message:"Internal server error"});
     }
 }

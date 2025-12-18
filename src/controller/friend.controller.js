@@ -50,19 +50,22 @@ export const acceptFriendRequest=async (req,res)=>{
 
 
     try{
-        console.log(requestId)
+      
         
  const request=await Friend.findById(requestId);
  request.status="accepted";
  request.save();
- console.log(request);
 
     if(!request){
         return res.status(404).json({message:"Friend request not found"});
-    }
-    res.json({message:"Friend request accepted",request});
-    }
+}
+
+    return res.json({message:"Friend request accepted",request});
+
+}
+
     catch(error){
+
         console.log("Error in accept friend request controller: ",error.message);
         return res.status(500).json({message:"Internal server error"});
     }

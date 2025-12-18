@@ -1,6 +1,6 @@
 import express from 'express';
 import User from '../models/user.model.js';
-import {login, signup, logout, updateProfile,checkAuth,uploadPost,getPosts,likePost,writeComment,loadComments,findUser} from '../controller/auth.controller.js';
+import {login, signup, logout, updateProfile,checkAuth,uploadPost,getPosts,likePost,writeComment,loadComments,findUser,updateName,changePassword,getUserPosts,deletePost} from '../controller/auth.controller.js';
  import multer from "multer";
 import {protectRoute} from  '../middleware/auth.middleware.js';
 import Friend from '../models/friend.model.js';
@@ -39,6 +39,10 @@ authRoute.post("/logout",logout);
  authRoute.post("/writeComment",writeComment);
  authRoute.post("/loadComments",loadComments);
 authRoute.post("/findUser",findUser);
+authRoute.get("/userPosts/:userId",getUserPosts);
+authRoute.post("/deletePost",protectRoute,deletePost);
+authRoute.post("/update-name",protectRoute,updateName);
+authRoute.post("/change-password",protectRoute,changePassword);
 
 
 
